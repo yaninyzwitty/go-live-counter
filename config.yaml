@@ -1,0 +1,8 @@
+---
+user-service:
+  port: 50051
+database:
+  username: yaninyzwitty
+  host: vague-echidna-13927.j77.aws-eu-central-1.cockroachlabs.cloud
+  database: defaultdb
+  port: 26257
