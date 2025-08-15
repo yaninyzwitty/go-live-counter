@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package like.v1;
+
+import "google/protobuf/timestamp.proto";
+import "user/v1/user.proto";
+import "post/v1/post.proto";
+ import "buf/validate/validate.proto";
+
+
+
+
+// like message type
+message Like {
+    post.v1.Post post = 1;
+    user.v1.User user = 2;
+    google.protobuf.Timestamp created_at = 3;
+}
+
+message CreateLikeRequest {
+        string post_id = 1 [ (buf.validate.field).string.uuid = true];
+        string user_id = 2 [ (buf.validate.field).string.uuid = true];
+}
+
+message CreateLikeResponse {
+    Like like = 1;
+}
+
+
+service LikeService {
+    rpc CreateLike (CreateLikeRequest) returns (CreateLikeResponse);
+}
+
+
