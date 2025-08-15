@@ -6,6 +6,7 @@ require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.7-20250717185734-6c6e0d3c608e.1
 	connectrpc.com/connect v1.18.1
 	google.golang.org/protobuf v1.36.7
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
