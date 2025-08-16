@@ -17,7 +17,6 @@ import (
 	db "github.com/yaninyzwitty/go-live-counter/internal/database"
 	"github.com/yaninyzwitty/go-live-counter/internal/handlers"
 	"github.com/yaninyzwitty/go-live-counter/internal/repository"
-	"github.com/yaninyzwitty/go-live-counter/internal/utils"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
@@ -39,9 +38,16 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		slog.Warn("failed to load .env", "error", err)
 	}
-	cockroachDBPassword := utils.GetEnvOrDefault("COCROACH_PASSWORD", "ABC")
 
-	// configuration for cocroach db
+	// load CockroachDB password from env or config, fail fast if missing
+	cockroachDBPassword := os.Getenv("COCKROACH_PASSWORD")
+
+	if cockroachDBPassword == "" {
+		slog.Error("missing CockroachDB password: set COCKROACH_PASSWORD or config.database.password")
+		os.Exit(1)
+	}
+
+	// configuration for cockroach db
 	roachConfig := &db.DBConfig{
 		Host:     cfg.Database.Host,
 		Port:     cfg.Database.Port,
@@ -52,16 +58,16 @@ func main() {
 	}
 
 	// setup new db connection
-	cocroach, err := db.New(30, 1*time.Second, roachConfig)
+	roachConn, err := db.New(30, 1*time.Second, roachConfig)
 	if err != nil {
-		slog.Error("failed to connect to cocroach db", "error", err)
+		slog.Error("failed to connect to CockroachDB", "error", err)
 		os.Exit(1)
 	}
 
-	defer cocroach.Close()
+	defer roachConn.Close()
 
 	// create cocroach db pool
-	cocroachPool := cocroach.Pool()
+	cocroachPool := roachConn.Pool()
 
 	// register all queries and mutations
 	roachQueries := repository.New(cocroachPool)

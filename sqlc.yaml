@@ -2,8 +2,8 @@ version: "2"
 
 sql:
   - engine: "postgresql"
-    queries: "/internal/database/queries"       # Your custom SQL queries
-    schema: "/internal/database/schemas"       # Your DB schema
+    queries: "internal/database/queries" # Your custom SQL queries
+    schema: "internal/database/schemas"        # Your DB schema
     gen:
       go:
         emit_json_tags: true

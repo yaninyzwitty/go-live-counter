@@ -22,18 +22,14 @@ type DBConfig struct {
 	SSLMode  string
 }
 
-// NewDB initializes and connects to the database with retries.
 func New(maxRetries int, retryInterval time.Duration, cfg *DBConfig) (*DB, error) {
 	connStr := fmt.Sprintf(
 		"postgres://%s:%s@%s:%d/%s?sslmode=%s",
 		cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.Database, cfg.SSLMode,
 	)
-
 	var pool *pgxpool.Pool
-
 	for attempt := 1; attempt <= maxRetries; attempt++ {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-
 		pgxCfg, err := pgxpool.ParseConfig(connStr)
 		if err != nil {
 			cancel()
@@ -41,19 +37,23 @@ func New(maxRetries int, retryInterval time.Duration, cfg *DBConfig) (*DB, error
 		}
 		pgxCfg.MaxConns = 500
 		pgxCfg.MinConns = 1
-
 		pool, err = pgxpool.NewWithConfig(ctx, pgxCfg)
-		if err == nil && pool.Ping(ctx) == nil {
-			cancel()
-			slog.Info("Successfully connected to database", "attempt", attempt)
-			return &DB{pool: pool}, nil
+		if err == nil {
+			if pingErr := pool.Ping(ctx); pingErr == nil {
+				cancel()
+				slog.Info("Successfully connected to database", "attempt", attempt)
+				return &DB{pool: pool}, nil
+			} else {
+				// Close pool before retrying to avoid leaking connections.
+				pool.Close()
+				slog.Warn("Failed to ping database", "attempt", attempt, "error", pingErr)
+			}
+		} else {
+			slog.Warn("Failed to create database pool", "attempt", attempt, "error", err)
 		}
-
-		slog.Warn("Failed to connect to database", "attempt", attempt, "error", err)
 		cancel()
 		time.Sleep(retryInterval)
 	}
-
 	return nil, fmt.Errorf("could not connect to database after %d attempts", maxRetries)
 }
 

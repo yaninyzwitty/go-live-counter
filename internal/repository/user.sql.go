@@ -61,7 +61,7 @@ func (q *Queries) FindItemByID(ctx context.Context, id uuid.UUID) (User, error) 
 
 const insertItem = `-- name: InsertItem :one
 INSERT INTO users (id, name, email)
-VALUES (uuid_generate_v4(), $1, $2)
+VALUES (gen_random_uuid(), $1, $2)
 RETURNING id, name, email, created_at, updated_at
 `
 
