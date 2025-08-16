@@ -1,0 +1,75 @@
+package handlers
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"strings"
+
+	"connectrpc.com/connect"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
+	postv1 "github.com/yaninyzwitty/go-live-counter/gen/post/v1"
+	"github.com/yaninyzwitty/go-live-counter/gen/post/v1/postv1connect"
+	userv1 "github.com/yaninyzwitty/go-live-counter/gen/user/v1"
+	"github.com/yaninyzwitty/go-live-counter/internal/repository"
+	"google.golang.org/protobuf/types/known/timestamppb"
+)
+
+// PostStoreServiceHandler implements the UserService API.
+
+type PostStoreServiceHandler struct {
+	postv1connect.UnimplementedPostServiceHandler
+	Queries *repository.Queries
+}
+
+// CREATE new instance of user handler
+func NewPost(queries *repository.Queries) *PostStoreServiceHandler {
+	return &PostStoreServiceHandler{
+		Queries: queries,
+	}
+}
+
+func (h *PostStoreServiceHandler) CreatePost(ctx context.Context, req *connect.Request[postv1.CreatePostRequest]) (*connect.Response[postv1.CreatePostResponse], error) {
+	userId := strings.TrimSpace(req.Msg.UserId)
+	content := strings.TrimSpace(req.Msg.Content)
+
+	if userId == "" || content == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("userId and content are required"))
+	}
+
+	// change user id to uuid
+	userID, err := uuid.Parse(userId)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to parse %v to string: %w", userID, err))
+	}
+
+	insertedPost, err := h.Queries.InsertPost(ctx, repository.InsertPostParams{
+		UserID:  userID,
+		Content: content,
+	})
+
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return nil, connect.NewError(connect.CodeAlreadyExists, errors.New("user with that email already exists"))
+		}
+		// Return a sanitized error to avoid leaking DB internals
+		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to create user"))
+	}
+
+	// Convert the inserted user to protobuf response
+	response := &postv1.CreatePostResponse{
+		Post: &postv1.Post{
+			Id: insertedPost.ID.String(),
+			User: &userv1.User{
+				Id: userId,
+			},
+			Content:   insertedPost.Content,
+			CreatedAt: timestamppb.New(insertedPost.CreatedAt),
+			UpdatedAt: timestamppb.New(insertedPost.UpdatedAt),
+		},
+	}
+	return connect.NewResponse(response), nil
+
+}

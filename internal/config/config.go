@@ -8,11 +8,14 @@ import (
 )
 
 type Config struct {
-	UserService UserService `yaml:"user-service"`
-	Database    Cocroach    `yaml:"database"`
+	UserService Service  `yaml:"user-service"`
+	LikeService Service  `yaml:"like-service"`
+	PostService Service  `yaml:"post-service"`
+	Database    Cocroach `yaml:"database"`
 }
 
-type UserService struct {
+// use service instead of juggling over all of them only have port as the field
+type Service struct {
 	Port int `yaml:"port"`
 }
 
