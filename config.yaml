@@ -4,7 +4,7 @@ user-service:
 post-service:
   port: 50052
 like-service:
-  port: 50052
+  port: 50053
 database:
   username: yaninyzwitty
   host: vague-echidna-13927.j77.aws-eu-central-1.cockroachlabs.cloud

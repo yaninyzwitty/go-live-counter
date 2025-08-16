@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	"connectrpc.com/connect"
@@ -38,10 +37,10 @@ func (h *PostStoreServiceHandler) CreatePost(ctx context.Context, req *connect.R
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("userId and content are required"))
 	}
 
-	// change user id to uuid
+	// parse userId into a UUID
 	userID, err := uuid.Parse(userId)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to parse %v to string: %w", userID, err))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("invalid userId: must be a UUID"))
 	}
 
 	insertedPost, err := h.Queries.InsertPost(ctx, repository.InsertPostParams{
@@ -52,10 +51,10 @@ func (h *PostStoreServiceHandler) CreatePost(ctx context.Context, req *connect.R
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
-			return nil, connect.NewError(connect.CodeAlreadyExists, errors.New("user with that email already exists"))
+			return nil, connect.NewError(connect.CodeAlreadyExists, errors.New("post already exists"))
 		}
 		// Return a sanitized error to avoid leaking DB internals
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to create user"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to create post"))
 	}
 
 	// Convert the inserted user to protobuf response

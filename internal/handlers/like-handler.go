@@ -8,6 +8,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
 	likev1 "github.com/yaninyzwitty/go-live-counter/gen/like/v1"
 	postv1 "github.com/yaninyzwitty/go-live-counter/gen/post/v1"
 	"github.com/yaninyzwitty/go-live-counter/gen/post/v1/postv1connect"
@@ -39,15 +40,29 @@ func (h *LikeStoreServiceHandler) CreateLike(ctx context.Context, req *connect.R
 	}
 
 	// Insert into DB via sqlc
+	uid, err := uuid.Parse(userId)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid userId: %w", err))
+	}
+	pid, err := uuid.Parse(postId)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid postId: %w", err))
+	}
+
 	like, err := h.Queries.InsertLike(ctx, repository.InsertLikeParams{
-		UserID: uuid.MustParse(userId),
-		PostID: uuid.MustParse(postId),
+		UserID: uid,
+		PostID: pid,
 	})
 
 	if err != nil {
-		// Handle unique violation gracefully (already liked)
-		if strings.Contains(err.Error(), "unique") {
-			return nil, connect.NewError(connect.CodeAlreadyExists, errors.New("user already liked this post"))
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			switch pgErr.Code {
+			case "23505": // unique violation
+				return nil, connect.NewError(connect.CodeAlreadyExists, errors.New("user already liked this post"))
+			case "23503": // foreign key violation
+				return nil, connect.NewError(connect.CodeNotFound, errors.New("user or post not found"))
+			}
 		}
 		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to insert like: %w", err))
 	}
