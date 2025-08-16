@@ -11,16 +11,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/yaninyzwitty/go-live-counter/gen/user/v1/userv1connect"
 	"github.com/yaninyzwitty/go-live-counter/internal/config"
+	db "github.com/yaninyzwitty/go-live-counter/internal/database"
+	"github.com/yaninyzwitty/go-live-counter/internal/handlers"
+	"github.com/yaninyzwitty/go-live-counter/internal/repository"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
-
-// userStoreServiceHandler implements the UserService API.
-type userStoreServiceHandler struct {
-	userv1connect.UnimplementedUserServiceHandler
-}
 
 func main() {
 	// Structured logging
@@ -36,10 +35,50 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err := godotenv.Load(); err != nil {
+		slog.Warn("failed to load .env", "error", err)
+	}
+
+	// load CockroachDB password from env or config, fail fast if missing
+	cockroachDBPassword := os.Getenv("COCKROACH_PASSWORD")
+
+	if cockroachDBPassword == "" {
+		slog.Error("missing CockroachDB password: set COCKROACH_PASSWORD or config.database.password")
+		os.Exit(1)
+	}
+
+	// configuration for cockroach db
+	roachConfig := &db.DBConfig{
+		Host:     cfg.Database.Host,
+		Port:     cfg.Database.Port,
+		User:     cfg.Database.Username,
+		Password: cockroachDBPassword,
+		Database: cfg.Database.Database,
+		SSLMode:  "verify-full",
+	}
+
+	// setup new db connection
+	roachConn, err := db.New(30, 1*time.Second, roachConfig)
+	if err != nil {
+		slog.Error("failed to connect to CockroachDB", "error", err)
+		os.Exit(1)
+	}
+
+	defer roachConn.Close()
+
+	// create cocroach db pool
+	cocroachPool := roachConn.Pool()
+
+	// register all queries and mutations
+	roachQueries := repository.New(cocroachPool)
+
+	// add the handlers
+	userHandler := handlers.New(roachQueries)
+
 	// Create HTTP mux and register services
 	mux := http.NewServeMux()
-	userPath, userHandler := userv1connect.NewUserServiceHandler(&userStoreServiceHandler{})
-	mux.Handle(userPath, userHandler)
+	userPath, userServiceHandler := userv1connect.NewUserServiceHandler(userHandler)
+	mux.Handle(userPath, userServiceHandler)
 
 	// Create HTTP server with h2c (HTTP/2 without TLS for local/dev)
 	server := &http.Server{
