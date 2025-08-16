@@ -9,7 +9,7 @@ import (
 
 type Config struct {
 	UserService UserService `yaml:"user-service"`
-	Database    Cocroach    `yaml:"cocroach-service"`
+	Database    Cocroach    `yaml:"database"`
 }
 
 type UserService struct {
