@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package outbox.v1;
+import "google/protobuf/timestamp.proto";
+
+
+message OutboxMessage {
+    string event_id = 1;
+    string event_type = 2;
+    string payload = 3;
+    bool published = 4;
+    google.protobuf.Timestamp created_at = 5;
+    google.protobuf.Timestamp processed_at = 6;
+}
+
+message ProcessOutboxMessageRequest {
+    bool published = 1;
+}
+
+message ProcessOutboxMessageResponse {
+    int32 processed_count = 1;
+}
+
+
+service ProcessorService {
+    rpc ProcessOutboxMessage(ProcessOutboxMessageRequest) returns (ProcessOutboxMessageResponse);
+}

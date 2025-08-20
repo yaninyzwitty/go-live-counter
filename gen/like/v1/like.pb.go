@@ -7,9 +7,6 @@
 package likev1
 
 import (
-	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
-	v1 "github.com/yaninyzwitty/go-live-counter/gen/post/v1"
-	v11 "github.com/yaninyzwitty/go-live-counter/gen/user/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -28,8 +25,8 @@ const (
 // like message type
 type Like struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Post          *v1.Post               `protobuf:"bytes,1,opt,name=post,proto3" json:"post,omitempty"`
-	User          *v11.User              `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty"`
+	PostId        string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -65,18 +62,18 @@ func (*Like) Descriptor() ([]byte, []int) {
 	return file_like_v1_like_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Like) GetPost() *v1.Post {
+func (x *Like) GetPostId() string {
 	if x != nil {
-		return x.Post
+		return x.PostId
 	}
-	return nil
+	return ""
 }
 
-func (x *Like) GetUser() *v11.User {
+func (x *Like) GetUserId() string {
 	if x != nil {
-		return x.User
+		return x.UserId
 	}
-	return nil
+	return ""
 }
 
 func (x *Like) GetCreatedAt() *timestamppb.Timestamp {
@@ -182,24 +179,137 @@ func (x *CreateLikeResponse) GetLike() *Like {
 	return nil
 }
 
+type StreamLikesRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PostId        string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StreamLikesRequest) Reset() {
+	*x = StreamLikesRequest{}
+	mi := &file_like_v1_like_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StreamLikesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StreamLikesRequest) ProtoMessage() {}
+
+func (x *StreamLikesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_like_v1_like_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StreamLikesRequest.ProtoReflect.Descriptor instead.
+func (*StreamLikesRequest) Descriptor() ([]byte, []int) {
+	return file_like_v1_like_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *StreamLikesRequest) GetPostId() string {
+	if x != nil {
+		return x.PostId
+	}
+	return ""
+}
+
+type LikeUpdate struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	PostId        string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
+	TotalLikes    int64                  `protobuf:"varint,3,opt,name=total_likes,json=totalLikes,proto3" json:"total_likes,omitempty"`
+	LikedAt       *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=liked_at,json=likedAt,proto3" json:"liked_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LikeUpdate) Reset() {
+	*x = LikeUpdate{}
+	mi := &file_like_v1_like_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LikeUpdate) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LikeUpdate) ProtoMessage() {}
+
+func (x *LikeUpdate) ProtoReflect() protoreflect.Message {
+	mi := &file_like_v1_like_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LikeUpdate.ProtoReflect.Descriptor instead.
+func (*LikeUpdate) Descriptor() ([]byte, []int) {
+	return file_like_v1_like_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *LikeUpdate) GetPostId() string {
+	if x != nil {
+		return x.PostId
+	}
+	return ""
+}
+
+func (x *LikeUpdate) GetTotalLikes() int64 {
+	if x != nil {
+		return x.TotalLikes
+	}
+	return 0
+}
+
+func (x *LikeUpdate) GetLikedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LikedAt
+	}
+	return nil
+}
+
 var File_like_v1_like_proto protoreflect.FileDescriptor
 
 const file_like_v1_like_proto_rawDesc = "" +
 	"\n" +
-	"\x12like/v1/like.proto\x12\alike.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12user/v1/user.proto\x1a\x12post/v1/post.proto\x1a\x1bbuf/validate/validate.proto\"\x87\x01\n" +
-	"\x04Like\x12!\n" +
-	"\x04post\x18\x01 \x01(\v2\r.post.v1.PostR\x04post\x12!\n" +
-	"\x04user\x18\x02 \x01(\v2\r.user.v1.UserR\x04user\x129\n" +
+	"\x12like/v1/like.proto\x12\alike.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"s\n" +
+	"\x04Like\x12\x17\n" +
+	"\apost_id\x18\x01 \x01(\tR\x06postId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x129\n" +
 	"\n" +
-	"created_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"Y\n" +
-	"\x11CreateLikeRequest\x12!\n" +
-	"\apost_id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x06postId\x12!\n" +
-	"\auser_id\x18\x02 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x06userId\"7\n" +
+	"created_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"E\n" +
+	"\x11CreateLikeRequest\x12\x17\n" +
+	"\apost_id\x18\x01 \x01(\tR\x06postId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\"7\n" +
 	"\x12CreateLikeResponse\x12!\n" +
-	"\x04like\x18\x01 \x01(\v2\r.like.v1.LikeR\x04like2T\n" +
+	"\x04like\x18\x01 \x01(\v2\r.like.v1.LikeR\x04like\"-\n" +
+	"\x12StreamLikesRequest\x12\x17\n" +
+	"\apost_id\x18\x01 \x01(\tR\x06postId\"}\n" +
+	"\n" +
+	"LikeUpdate\x12\x17\n" +
+	"\apost_id\x18\x01 \x01(\tR\x06postId\x12\x1f\n" +
+	"\vtotal_likes\x18\x03 \x01(\x03R\n" +
+	"totalLikes\x125\n" +
+	"\bliked_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\alikedAt2\x97\x01\n" +
 	"\vLikeService\x12E\n" +
 	"\n" +
-	"CreateLike\x12\x1a.like.v1.CreateLikeRequest\x1a\x1b.like.v1.CreateLikeResponseB\x91\x01\n" +
+	"CreateLike\x12\x1a.like.v1.CreateLikeRequest\x1a\x1b.like.v1.CreateLikeResponse\x12A\n" +
+	"\vStreamLikes\x12\x1b.like.v1.StreamLikesRequest\x1a\x13.like.v1.LikeUpdate0\x01B\x91\x01\n" +
 	"\vcom.like.v1B\tLikeProtoP\x01Z:github.com/yaninyzwitty/go-live-counter/gen/like/v1;likev1\xa2\x02\x03LXX\xaa\x02\aLike.V1\xca\x02\aLike\\V1\xe2\x02\x13Like\\V1\\GPBMetadata\xea\x02\bLike::V1b\x06proto3"
 
 var (
@@ -214,27 +324,28 @@ func file_like_v1_like_proto_rawDescGZIP() []byte {
 	return file_like_v1_like_proto_rawDescData
 }
 
-var file_like_v1_like_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
+var file_like_v1_like_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_like_v1_like_proto_goTypes = []any{
 	(*Like)(nil),                  // 0: like.v1.Like
 	(*CreateLikeRequest)(nil),     // 1: like.v1.CreateLikeRequest
 	(*CreateLikeResponse)(nil),    // 2: like.v1.CreateLikeResponse
-	(*v1.Post)(nil),               // 3: post.v1.Post
-	(*v11.User)(nil),              // 4: user.v1.User
+	(*StreamLikesRequest)(nil),    // 3: like.v1.StreamLikesRequest
+	(*LikeUpdate)(nil),            // 4: like.v1.LikeUpdate
 	(*timestamppb.Timestamp)(nil), // 5: google.protobuf.Timestamp
 }
 var file_like_v1_like_proto_depIdxs = []int32{
-	3, // 0: like.v1.Like.post:type_name -> post.v1.Post
-	4, // 1: like.v1.Like.user:type_name -> user.v1.User
-	5, // 2: like.v1.Like.created_at:type_name -> google.protobuf.Timestamp
-	0, // 3: like.v1.CreateLikeResponse.like:type_name -> like.v1.Like
-	1, // 4: like.v1.LikeService.CreateLike:input_type -> like.v1.CreateLikeRequest
+	5, // 0: like.v1.Like.created_at:type_name -> google.protobuf.Timestamp
+	0, // 1: like.v1.CreateLikeResponse.like:type_name -> like.v1.Like
+	5, // 2: like.v1.LikeUpdate.liked_at:type_name -> google.protobuf.Timestamp
+	1, // 3: like.v1.LikeService.CreateLike:input_type -> like.v1.CreateLikeRequest
+	3, // 4: like.v1.LikeService.StreamLikes:input_type -> like.v1.StreamLikesRequest
 	2, // 5: like.v1.LikeService.CreateLike:output_type -> like.v1.CreateLikeResponse
-	5, // [5:6] is the sub-list for method output_type
-	4, // [4:5] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	4, // 6: like.v1.LikeService.StreamLikes:output_type -> like.v1.LikeUpdate
+	5, // [5:7] is the sub-list for method output_type
+	3, // [3:5] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_like_v1_like_proto_init() }
@@ -248,7 +359,7 @@ func file_like_v1_like_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_like_v1_like_proto_rawDesc), len(file_like_v1_like_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   3,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

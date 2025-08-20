@@ -3,21 +3,19 @@ syntax = "proto3";
 package post.v1;
 
 import "google/protobuf/timestamp.proto";
-import "user/v1/user.proto";
- import "buf/validate/validate.proto";
 
 
 
 message Post {
-    string id = 1 [(buf.validate.field).string.uuid = true];
-    user.v1.User user = 2;
+    string id = 1;
+    string user_id = 2;
     string content = 3;
     google.protobuf.Timestamp created_at = 4;
     google.protobuf.Timestamp updated_at = 5;
 }
 
 message CreatePostRequest {
-    string user_id = 1 [(buf.validate.field).string.uuid = true]; 
+    string user_id = 1; 
     string content = 2;
 }
 

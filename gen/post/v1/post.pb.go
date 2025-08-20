@@ -7,8 +7,6 @@
 package postv1
 
 import (
-	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
-	v1 "github.com/yaninyzwitty/go-live-counter/gen/user/v1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -27,7 +25,7 @@ const (
 type Post struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	User          *v1.User               `protobuf:"bytes,2,opt,name=user,proto3" json:"user,omitempty"`
+	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	Content       string                 `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
 	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
@@ -72,11 +70,11 @@ func (x *Post) GetId() string {
 	return ""
 }
 
-func (x *Post) GetUser() *v1.User {
+func (x *Post) GetUserId() string {
 	if x != nil {
-		return x.User
+		return x.UserId
 	}
-	return nil
+	return ""
 }
 
 func (x *Post) GetContent() string {
@@ -200,17 +198,17 @@ var File_post_v1_post_proto protoreflect.FileDescriptor
 
 const file_post_v1_post_proto_rawDesc = "" +
 	"\n" +
-	"\x12post/v1/post.proto\x12\apost.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x12user/v1/user.proto\x1a\x1bbuf/validate/validate.proto\"\xd3\x01\n" +
-	"\x04Post\x12\x18\n" +
-	"\x02id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x02id\x12!\n" +
-	"\x04user\x18\x02 \x01(\v2\r.user.v1.UserR\x04user\x12\x18\n" +
+	"\x12post/v1/post.proto\x12\apost.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xbf\x01\n" +
+	"\x04Post\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x18\n" +
 	"\acontent\x18\x03 \x01(\tR\acontent\x129\n" +
 	"\n" +
 	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"updated_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"P\n" +
-	"\x11CreatePostRequest\x12!\n" +
-	"\auser_id\x18\x01 \x01(\tB\b\xbaH\x05r\x03\xb0\x01\x01R\x06userId\x12\x18\n" +
+	"updated_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"F\n" +
+	"\x11CreatePostRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x18\n" +
 	"\acontent\x18\x02 \x01(\tR\acontent\"7\n" +
 	"\x12CreatePostResponse\x12!\n" +
 	"\x04post\x18\x01 \x01(\v2\r.post.v1.PostR\x04post2T\n" +
@@ -236,21 +234,19 @@ var file_post_v1_post_proto_goTypes = []any{
 	(*Post)(nil),                  // 0: post.v1.Post
 	(*CreatePostRequest)(nil),     // 1: post.v1.CreatePostRequest
 	(*CreatePostResponse)(nil),    // 2: post.v1.CreatePostResponse
-	(*v1.User)(nil),               // 3: user.v1.User
-	(*timestamppb.Timestamp)(nil), // 4: google.protobuf.Timestamp
+	(*timestamppb.Timestamp)(nil), // 3: google.protobuf.Timestamp
 }
 var file_post_v1_post_proto_depIdxs = []int32{
-	3, // 0: post.v1.Post.user:type_name -> user.v1.User
-	4, // 1: post.v1.Post.created_at:type_name -> google.protobuf.Timestamp
-	4, // 2: post.v1.Post.updated_at:type_name -> google.protobuf.Timestamp
-	0, // 3: post.v1.CreatePostResponse.post:type_name -> post.v1.Post
-	1, // 4: post.v1.PostService.CreatePost:input_type -> post.v1.CreatePostRequest
-	2, // 5: post.v1.PostService.CreatePost:output_type -> post.v1.CreatePostResponse
-	5, // [5:6] is the sub-list for method output_type
-	4, // [4:5] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	3, // 0: post.v1.Post.created_at:type_name -> google.protobuf.Timestamp
+	3, // 1: post.v1.Post.updated_at:type_name -> google.protobuf.Timestamp
+	0, // 2: post.v1.CreatePostResponse.post:type_name -> post.v1.Post
+	1, // 3: post.v1.PostService.CreatePost:input_type -> post.v1.CreatePostRequest
+	2, // 4: post.v1.PostService.CreatePost:output_type -> post.v1.CreatePostResponse
+	4, // [4:5] is the sub-list for method output_type
+	3, // [3:4] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_post_v1_post_proto_init() }

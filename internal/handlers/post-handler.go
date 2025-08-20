@@ -10,7 +10,6 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	postv1 "github.com/yaninyzwitty/go-live-counter/gen/post/v1"
 	"github.com/yaninyzwitty/go-live-counter/gen/post/v1/postv1connect"
-	userv1 "github.com/yaninyzwitty/go-live-counter/gen/user/v1"
 	"github.com/yaninyzwitty/go-live-counter/internal/repository"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -66,10 +65,8 @@ func (h *PostStoreServiceHandler) CreatePost(ctx context.Context, req *connect.R
 	// Convert the inserted post to protobuf response
 	response := &postv1.CreatePostResponse{
 		Post: &postv1.Post{
-			Id: insertedPost.ID.String(),
-			User: &userv1.User{
-				Id: insertedPost.UserID.String(),
-			},
+			Id:        insertedPost.ID.String(),
+			UserId:    insertedPost.UserID.String(),
 			Content:   insertedPost.Content,
 			CreatedAt: timestamppb.New(insertedPost.CreatedAt),
 			UpdatedAt: timestamppb.New(insertedPost.UpdatedAt),

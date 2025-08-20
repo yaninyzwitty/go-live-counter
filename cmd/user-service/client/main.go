@@ -37,8 +37,8 @@ func main() {
 	)
 
 	req := connect.NewRequest(&userv1.CreateUserRequest{
-		Name:  "Ian Mwangi",
-		Email: "ianmwa143@outlook.com",
+		Name:  "miriam witty",
+		Email: "miriamwitty@gmail.com",
 	})
 
 	res, err := userServiceClient.CreateUser(context.TODO(), req)

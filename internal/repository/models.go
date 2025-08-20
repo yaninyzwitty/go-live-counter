@@ -17,6 +17,14 @@ type Like struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type Outbox struct {
+	ID        uuid.UUID `json:"id"`
+	EventType string    `json:"event_type"`
+	Payload   []byte    `json:"payload"`
+	CreatedAt time.Time `json:"created_at"`
+	Published bool      `json:"published"`
+}
+
 type Post struct {
 	ID        uuid.UUID `json:"id"`
 	UserID    uuid.UUID `json:"user_id"`
