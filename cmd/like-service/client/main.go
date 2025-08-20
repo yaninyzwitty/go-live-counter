@@ -37,8 +37,8 @@ func main() {
 	)
 
 	req := connect.NewRequest(&likev1.CreateLikeRequest{
-		PostId: "403ba5f1-b7d9-429d-8a14-5d840ca1e8dd",
-		UserId: "3be6c9ba-d2f4-4fb5-8f32-ba7dd1d00466",
+		PostId: "5cd0cb60-4d98-479a-b226-c7130362fa8b",
+		UserId: "d28471b8-e006-476f-b2c9-88f02dfbc4ae",
 	})
 
 	res, err := likeServiceClient.CreateLike(context.TODO(), req)
@@ -48,6 +48,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	slog.Info("res", "liked-post-id", res.Msg.Like.Post.Id)
+	slog.Info("res", "liked-post-id", res.Msg.Like.PostId)
 
 }

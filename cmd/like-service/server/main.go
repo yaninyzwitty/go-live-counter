@@ -11,11 +11,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/joho/godotenv"
 	"github.com/yaninyzwitty/go-live-counter/gen/like/v1/likev1connect"
 	"github.com/yaninyzwitty/go-live-counter/internal/config"
 	db "github.com/yaninyzwitty/go-live-counter/internal/database"
 	likeHandler "github.com/yaninyzwitty/go-live-counter/internal/handlers"
+	"github.com/yaninyzwitty/go-live-counter/internal/queue"
 	"github.com/yaninyzwitty/go-live-counter/internal/repository"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -69,11 +71,37 @@ func main() {
 	// create cocroach db pool
 	cocroachPool := roachConn.Pool()
 
+	tokenStr := os.Getenv("PULSAR_TOKEN")
+	if tokenStr == "" {
+		slog.Error("missing token string")
+		os.Exit(1)
+	}
+
+	// pulsar config
+	pulsarConfig := queue.PulsarConfig{
+		ServiceURL: cfg.Queue.Url,
+		TokenStr:   tokenStr,
+	}
+
+	pw, err := queue.NewPulsarWrapper(pulsarConfig)
+	if err != nil {
+		slog.Error("failed to create pulsar wrapper: ", "error", err)
+	}
+	defer pw.Close()
+
+	// create consumer
+	consumer, err := pw.CreateConsumer(cfg.Queue.TopicName, "test-subscription", pulsar.Shared)
+	if err != nil {
+		slog.Error("failed to create consumer", "error", err)
+		os.Exit(1)
+	}
+	defer consumer.Close()
+
 	// register all queries and mutations
 	roachQueries := repository.New(cocroachPool)
 
 	// add the handler
-	likeHandler := likeHandler.NewLike(roachQueries)
+	likeHandler := likeHandler.NewLike(roachQueries, cocroachPool, consumer)
 
 	// Create HTTP mux and register services
 	mux := http.NewServeMux()

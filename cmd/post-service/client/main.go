@@ -37,8 +37,8 @@ func main() {
 	)
 
 	req := connect.NewRequest(&postv1.CreatePostRequest{
-		UserId:  "3be6c9ba-d2f4-4fb5-8f32-ba7dd1d00466",
-		Content: "Dont look back",
+		UserId:  "e3c21797-fff2-4e4c-9dbe-cd1bc461c643",
+		Content: `Shoutout to my wrinkly hand `,
 	})
 
 	res, err := postServiceClient.CreatePost(context.TODO(), req)
