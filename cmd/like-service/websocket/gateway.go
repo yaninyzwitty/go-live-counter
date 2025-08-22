@@ -12,6 +12,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/coder/websocket"
+	"github.com/google/uuid"
 	likev1 "github.com/yaninyzwitty/go-live-counter/gen/like/v1"
 	"github.com/yaninyzwitty/go-live-counter/gen/like/v1/likev1connect"
 	"github.com/yaninyzwitty/go-live-counter/internal/config"
@@ -38,7 +39,14 @@ func (s *gatewayServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	postID := r.URL.Query().Get("post_id")
 	if postID == "" {
-		postID = "5cd0cb60-4d98-479a-b226-c7130362fa8b"
+		_ = c.Write(ctx, websocket.MessageText, []byte(`{"error":"missing post_id"}`))
+		c.Close(websocket.StatusPolicyViolation, "missing post_id")
+		return
+	}
+	if _, err := uuid.Parse(postID); err != nil {
+		_ = c.Write(ctx, websocket.MessageText, []byte(`{"error":"invalid post_id"}`))
+		c.Close(websocket.StatusPolicyViolation, "invalid post_id")
+		return
 	}
 
 	req := connect.NewRequest(&likev1.StreamLikesRequest{
@@ -95,12 +103,15 @@ func (s *gatewayServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			s.logger.Error("failed to marshal update", "error", err)
 			continue
 		}
+		writeCtx, writeCancel := context.WithTimeout(ctx, 5*time.Second)
 
-		if err := c.Write(ctx, websocket.MessageText, b); err != nil {
+		if err := c.Write(writeCtx, websocket.MessageText, b); err != nil {
 			s.logger.Error("failed to write to websocket", "error", err)
+			writeCancel()
 			cancel()
 			break
 		}
+		writeCancel()
 	}
 
 	if err := stream.Err(); err != nil {

@@ -23,8 +23,9 @@ type Service struct {
 }
 
 type PulsarQueue struct {
-	Url       string `yaml:"url"`
-	TopicName string `yaml:"topic_name"`
+	Url              string `yaml:"url"`
+	TopicName        string `yaml:"topic_name"`
+	SubscriptionName string `yaml:"subscription_name"`
 }
 
 type Cocroach struct {
@@ -40,10 +41,11 @@ func (c *Config) LoadConfig(path string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		slog.Error("failed to load file for path", "path", path, "error", err)
+		return err
 	}
 
-	err = yaml.Unmarshal(data, c)
-	if err != nil {
+	if err := yaml.Unmarshal(data, c); err != nil {
+
 		slog.Error("failed to unmarshal config file", "error", err, "path", path)
 		return err
 	}
