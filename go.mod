@@ -3,9 +3,9 @@ module github.com/yaninyzwitty/go-live-counter
 go 1.24.3
 
 require (
-	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.7-20250717185734-6c6e0d3c608e.1
 	connectrpc.com/connect v1.18.1
 	github.com/apache/pulsar-client-go v0.16.0
+	github.com/coder/websocket v1.8.13
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.5
 	github.com/joho/godotenv v1.5.1
@@ -23,7 +23,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.4.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/coder/websocket v1.8.13 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect

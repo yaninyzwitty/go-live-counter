@@ -17,3 +17,4 @@ database:
 queue:
   url: pulsar+ssl://pulsar-gcp-europewest1.streaming.datastax.com:6651
   topic_name: persistent://witty-tenant/default/likes
+  subscription_name: witty-subscription
