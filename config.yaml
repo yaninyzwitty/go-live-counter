@@ -7,6 +7,8 @@ like-service:
   port: 50053
 outbox-service:
   port: 50054
+websocket-service:
+  port: 50055
 database:
   username: yaninyzwitty
   host: vague-echidna-13927.j77.aws-eu-central-1.cockroachlabs.cloud

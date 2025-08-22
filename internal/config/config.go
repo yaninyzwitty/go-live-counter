@@ -11,6 +11,7 @@ type Config struct {
 	UserService Service     `yaml:"user-service"`
 	LikeService Service     `yaml:"like-service"`
 	PostService Service     `yaml:"post-service"`
+	Websocket   Service     `yaml:"websocket-service"`
 	Outbox      Service     `yaml:"outbox-service"`
 	Database    Cocroach    `yaml:"database"`
 	Queue       PulsarQueue `yaml:"queue"`
