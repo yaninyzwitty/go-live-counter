@@ -90,7 +90,7 @@ func main() {
 	defer pw.Close()
 
 	// create consumer
-	consumer, err := pw.CreateConsumer(cfg.Queue.TopicName, "test-subscription", pulsar.Shared)
+	consumer, err := pw.CreateConsumer(cfg.Queue.TopicName, "witty-subscription", pulsar.Shared)
 	if err != nil {
 		slog.Error("failed to create consumer", "error", err)
 		os.Exit(1)

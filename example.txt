@@ -1,31 +1,4 @@
-package main
-
-import (
-	"context"
-	"fmt"
-	"log/slog"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-
-	"connectrpc.com/connect"
-	likev1 "github.com/yaninyzwitty/go-live-counter/gen/like/v1"
-	"github.com/yaninyzwitty/go-live-counter/gen/like/v1/likev1connect"
-	"github.com/yaninyzwitty/go-live-counter/internal/config"
-)
-
-func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
-	slog.SetDefault(logger)
-
-	// Load config
-	var cfg config.Config
-	if err := cfg.LoadConfig("config.yaml"); err != nil {
-		logger.Error("Failed to load config", "error", err)
-		os.Exit(1)
-	}
-	// Setup client
+// Setup client
 	httpClient := http.DefaultClient
 	likeServiceURL := fmt.Sprintf("http://localhost:%d", cfg.LikeService.Port)
 	likeClient := likev1connect.NewLikeServiceClient(httpClient, likeServiceURL)
@@ -59,5 +32,3 @@ func main() {
 	if err := stream.Err(); err != nil {
 		slog.Error("stream ended with error", "error", err)
 	}
-
-}
