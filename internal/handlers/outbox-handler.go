@@ -40,7 +40,7 @@ var eventUnmarshalers = map[string]func([]byte) error{
 		return protojson.Unmarshal(payload, &like)
 	},
 	"USER_DISLIKE_EVENT_TYPE": func(payload []byte) error {
-		var dislike likev1.DisLike
+		var dislike likev1.Dislike
 		return protojson.Unmarshal(payload, &dislike)
 	},
 }

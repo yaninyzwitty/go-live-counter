@@ -13,7 +13,7 @@ message Like {
     string user_id = 2;
     google.protobuf.Timestamp created_at = 3;
 }
-message DisLike {
+message Dislike {
     string post_id = 1;
     string user_id = 2;
     google.protobuf.Timestamp created_at = 3;
@@ -46,8 +46,7 @@ message CreateDislikeRequest {
 }
 
 message CreateDislikeResponse {
-    DisLike dislike = 1;
-    
+    Dislike dislike = 1;
 }
 
 
