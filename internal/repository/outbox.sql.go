@@ -12,7 +12,7 @@ import (
 )
 
 const findAndLockUnpublishedEvents = `-- name: FindAndLockUnpublishedEvents :many
-SELECT id, event_type, payload, created_at, published FROM outbox
+SELECT id, event_type, payload, created_at, published, processed_at FROM outbox
 WHERE published = false
 ORDER BY created_at
 LIMIT 10
@@ -34,6 +34,7 @@ func (q *Queries) FindAndLockUnpublishedEvents(ctx context.Context) ([]Outbox, e
 			&i.Payload,
 			&i.CreatedAt,
 			&i.Published,
+			&i.ProcessedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -53,7 +54,7 @@ VALUES (
     $2,                 -- payload (JSONB)
     false               -- always start unpublished
 )
-RETURNING id, event_type, payload, created_at, published
+RETURNING id, event_type, payload, created_at, published, processed_at
 `
 
 type InsertPayloadEventParams struct {
@@ -70,6 +71,7 @@ func (q *Queries) InsertPayloadEvent(ctx context.Context, arg InsertPayloadEvent
 		&i.Payload,
 		&i.CreatedAt,
 		&i.Published,
+		&i.ProcessedAt,
 	)
 	return i, err
 }
@@ -78,7 +80,7 @@ const publishProcessedEvent = `-- name: PublishProcessedEvent :one
 UPDATE outbox
 SET published = true, processed_at = now()
 WHERE id = $1
-RETURNING id, event_type, payload, created_at, published
+RETURNING id, event_type, payload, created_at, published, processed_at
 `
 
 func (q *Queries) PublishProcessedEvent(ctx context.Context, id uuid.UUID) (Outbox, error) {
@@ -90,6 +92,7 @@ func (q *Queries) PublishProcessedEvent(ctx context.Context, id uuid.UUID) (Outb
 		&i.Payload,
 		&i.CreatedAt,
 		&i.Published,
+		&i.ProcessedAt,
 	)
 	return i, err
 }

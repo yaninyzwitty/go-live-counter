@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	NUM_WORKERS = 5
+	NUM_WORKERS = 1
 )
 
 var logger *slog.Logger
@@ -124,7 +124,7 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		startPool(ctx, outboxHandler)
+		startPool(ctx, outboxHandler, NUM_WORKERS)
 	}()
 
 	// HTTP server
@@ -155,25 +155,27 @@ func main() {
 }
 
 // --- Worker pool ---
-func startPool(ctx context.Context, outboxHandler *handlers.OutboxStoreServiceHandler) {
-	for i := 0; i < 1; i++ {
+func startPool(ctx context.Context, outboxHandler *handlers.OutboxStoreServiceHandler, workerCount int) {
+	for i := 0; i < workerCount; i++ {
 		go func(workerID int) {
 			logger.Info("worker started", "id", workerID)
 			ticker := time.NewTicker(5 * time.Second)
-			defer ticker.Stop()
+			defer func() {
+				ticker.Stop()
+				logger.Info("worker stopped", "id", workerID)
+			}()
 
 			for {
 				select {
 				case <-ctx.Done():
-					logger.Info("worker stopped", "id", workerID)
 					return
 				case <-ticker.C:
 					if err := processEvents(ctx, outboxHandler); err != nil {
-						logger.Error("Worker failed", "id", workerID, "error", err)
+						logger.Error("worker failed", "id", workerID, "error", err)
 					}
 				}
 			}
-		}(i)
+		}(i + 1)
 	}
 }
 
