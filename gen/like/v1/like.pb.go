@@ -83,7 +83,7 @@ func (x *Like) GetCreatedAt() *timestamppb.Timestamp {
 	return nil
 }
 
-type DisLike struct {
+type Dislike struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	PostId        string                 `protobuf:"bytes,1,opt,name=post_id,json=postId,proto3" json:"post_id,omitempty"`
 	UserId        string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -92,20 +92,20 @@ type DisLike struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *DisLike) Reset() {
-	*x = DisLike{}
+func (x *Dislike) Reset() {
+	*x = Dislike{}
 	mi := &file_like_v1_like_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *DisLike) String() string {
+func (x *Dislike) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*DisLike) ProtoMessage() {}
+func (*Dislike) ProtoMessage() {}
 
-func (x *DisLike) ProtoReflect() protoreflect.Message {
+func (x *Dislike) ProtoReflect() protoreflect.Message {
 	mi := &file_like_v1_like_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -117,26 +117,26 @@ func (x *DisLike) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use DisLike.ProtoReflect.Descriptor instead.
-func (*DisLike) Descriptor() ([]byte, []int) {
+// Deprecated: Use Dislike.ProtoReflect.Descriptor instead.
+func (*Dislike) Descriptor() ([]byte, []int) {
 	return file_like_v1_like_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *DisLike) GetPostId() string {
+func (x *Dislike) GetPostId() string {
 	if x != nil {
 		return x.PostId
 	}
 	return ""
 }
 
-func (x *DisLike) GetUserId() string {
+func (x *Dislike) GetUserId() string {
 	if x != nil {
 		return x.UserId
 	}
 	return ""
 }
 
-func (x *DisLike) GetCreatedAt() *timestamppb.Timestamp {
+func (x *Dislike) GetCreatedAt() *timestamppb.Timestamp {
 	if x != nil {
 		return x.CreatedAt
 	}
@@ -397,7 +397,7 @@ func (x *CreateDislikeRequest) GetUserId() string {
 
 type CreateDislikeResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Dislike       *DisLike               `protobuf:"bytes,1,opt,name=dislike,proto3" json:"dislike,omitempty"`
+	Dislike       *Dislike               `protobuf:"bytes,1,opt,name=dislike,proto3" json:"dislike,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -432,7 +432,7 @@ func (*CreateDislikeResponse) Descriptor() ([]byte, []int) {
 	return file_like_v1_like_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *CreateDislikeResponse) GetDislike() *DisLike {
+func (x *CreateDislikeResponse) GetDislike() *Dislike {
 	if x != nil {
 		return x.Dislike
 	}
@@ -449,7 +449,7 @@ const file_like_v1_like_proto_rawDesc = "" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x129\n" +
 	"\n" +
 	"created_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\"v\n" +
-	"\aDisLike\x12\x17\n" +
+	"\aDislike\x12\x17\n" +
 	"\apost_id\x18\x01 \x01(\tR\x06postId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x129\n" +
 	"\n" +
@@ -471,7 +471,7 @@ const file_like_v1_like_proto_rawDesc = "" +
 	"\apost_id\x18\x01 \x01(\tR\x06postId\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\"C\n" +
 	"\x15CreateDislikeResponse\x12*\n" +
-	"\adislike\x18\x01 \x01(\v2\x10.like.v1.DisLikeR\adislike2\xe7\x01\n" +
+	"\adislike\x18\x01 \x01(\v2\x10.like.v1.DislikeR\adislike2\xe7\x01\n" +
 	"\vLikeService\x12E\n" +
 	"\n" +
 	"CreateLike\x12\x1a.like.v1.CreateLikeRequest\x1a\x1b.like.v1.CreateLikeResponse\x12N\n" +
@@ -494,7 +494,7 @@ func file_like_v1_like_proto_rawDescGZIP() []byte {
 var file_like_v1_like_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_like_v1_like_proto_goTypes = []any{
 	(*Like)(nil),                  // 0: like.v1.Like
-	(*DisLike)(nil),               // 1: like.v1.DisLike
+	(*Dislike)(nil),               // 1: like.v1.Dislike
 	(*CreateLikeRequest)(nil),     // 2: like.v1.CreateLikeRequest
 	(*CreateLikeResponse)(nil),    // 3: like.v1.CreateLikeResponse
 	(*StreamLikesRequest)(nil),    // 4: like.v1.StreamLikesRequest
@@ -505,10 +505,10 @@ var file_like_v1_like_proto_goTypes = []any{
 }
 var file_like_v1_like_proto_depIdxs = []int32{
 	8, // 0: like.v1.Like.created_at:type_name -> google.protobuf.Timestamp
-	8, // 1: like.v1.DisLike.created_at:type_name -> google.protobuf.Timestamp
+	8, // 1: like.v1.Dislike.created_at:type_name -> google.protobuf.Timestamp
 	0, // 2: like.v1.CreateLikeResponse.like:type_name -> like.v1.Like
 	8, // 3: like.v1.LikeUpdate.liked_at:type_name -> google.protobuf.Timestamp
-	1, // 4: like.v1.CreateDislikeResponse.dislike:type_name -> like.v1.DisLike
+	1, // 4: like.v1.CreateDislikeResponse.dislike:type_name -> like.v1.Dislike
 	2, // 5: like.v1.LikeService.CreateLike:input_type -> like.v1.CreateLikeRequest
 	6, // 6: like.v1.LikeService.CreateDislike:input_type -> like.v1.CreateDislikeRequest
 	4, // 7: like.v1.LikeService.StreamLikes:input_type -> like.v1.StreamLikesRequest

@@ -198,7 +198,7 @@ func (h *LikeStoreServiceHandler) CreateDislike(
 	qtx := h.Queries.WithTx(tx)
 
 	// Build DislikeEvent proto
-	dislikeEvent := &likev1.DisLike{
+	dislikeEvent := &likev1.Dislike{
 		PostId:    postId,
 		UserId:    userId,
 		CreatedAt: timestamppb.Now(),
@@ -230,21 +230,16 @@ func (h *LikeStoreServiceHandler) CreateDislike(
 		PostID: pid,
 	})
 	if err != nil {
-		var pgErr *pgconn.PgError
-		if errors.As(err, &pgErr) {
-			switch pgErr.Code {
-			case "23505": // unique violation
-				return nil, connect.NewError(connect.CodeAlreadyExists,
-					errors.New("like already removed"))
-			case "23503": // foreign key violation
-				return nil, connect.NewError(connect.CodeNotFound,
-					errors.New("user or post not found"))
-			}
-		}
 		return nil, connect.NewError(
 			connect.CodeInternal,
 			fmt.Errorf("failed to delete like: %w", err),
 		)
+	}
+
+	// Check if any like was actually removed
+	if deletedLike.UserID == uuid.Nil || deletedLike.PostID == uuid.Nil {
+		return nil, connect.NewError(connect.CodeNotFound,
+			errors.New("like not found"))
 	}
 
 	// Commit transaction only if both operations succeeded
@@ -257,7 +252,7 @@ func (h *LikeStoreServiceHandler) CreateDislike(
 
 	// Build response
 	res := &likev1.CreateDislikeResponse{
-		Dislike: &likev1.DisLike{
+		Dislike: &likev1.Dislike{
 			PostId:    deletedLike.PostID.String(),
 			UserId:    deletedLike.UserID.String(),
 			CreatedAt: dislikeEvent.CreatedAt,
@@ -300,21 +295,43 @@ func (h *LikeStoreServiceHandler) StreamLikes(
 
 		eventType := msg.Properties()["event_type"]
 
-		var like likev1.Like
-		if err := protojson.Unmarshal(msg.Payload(), &like); err != nil {
-			slog.Error("failed to unmarshal like event", "err", err)
-			// Ack anyway to avoid poison-message loop
+		var postId string
+		var eventTime *timestamppb.Timestamp
+
+		switch eventType {
+		case USER_LIKE_EVENT_TYPE:
+			var like likev1.Like
+			if err := protojson.Unmarshal(msg.Payload(), &like); err != nil {
+				slog.Error("failed to unmarshal like event", "err", err, "eventType", eventType)
+				_ = h.Consumer.Ack(msg)
+				continue
+			}
+			postId = like.GetPostId()
+			eventTime = like.CreatedAt
+
+		case USER_DISLIKE_EVENT_TYPE:
+			var dislike likev1.Dislike
+			if err := protojson.Unmarshal(msg.Payload(), &dislike); err != nil {
+				slog.Error("failed to unmarshal dislike event", "err", err, "eventType", eventType)
+				_ = h.Consumer.Ack(msg)
+				continue
+			}
+			postId = dislike.GetPostId()
+			eventTime = dislike.CreatedAt
+
+		default:
+			slog.Error("unknown event type", "eventType", eventType)
 			_ = h.Consumer.Ack(msg)
 			continue
 		}
 
 		// Only process events for this post
-		if like.GetPostId() != postIDStr {
+		if postId != postIDStr {
 			_ = h.Consumer.Ack(msg)
 			continue
 		}
 
-		// Update counter
+		// Update counter based on event type
 		switch eventType {
 		case USER_LIKE_EVENT_TYPE:
 			totalLikes++
@@ -322,16 +339,13 @@ func (h *LikeStoreServiceHandler) StreamLikes(
 			if totalLikes > 0 {
 				totalLikes--
 			}
-		default:
-			_ = h.Consumer.Ack(msg)
-			continue
 		}
 
 		// Send update
 		update := &likev1.LikeUpdate{
-			PostId:     like.GetPostId(),
+			PostId:     postId,
 			TotalLikes: totalLikes,
-			LikedAt:    like.CreatedAt,
+			LikedAt:    eventTime,
 		}
 
 		if err := stream.Send(update); err != nil {
