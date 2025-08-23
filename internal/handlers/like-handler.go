@@ -22,7 +22,8 @@ import (
 // LikeStoreServiceHandler implements the UserService API.
 
 const (
-	USER_LIKE_EVENT_TYPE = "USER_LIKE_EVENT_TYPE"
+	USER_LIKE_EVENT_TYPE    = "USER_LIKE_EVENT_TYPE"
+	USER_DISLIKE_EVENT_TYPE = "USER_DISLIKE_EVENT_TYPE"
 )
 
 type LikeStoreServiceHandler struct {
@@ -153,17 +154,130 @@ func (h *LikeStoreServiceHandler) CreateLike(ctx context.Context, req *connect.R
 
 }
 
+func (h *LikeStoreServiceHandler) CreateDislike(
+	ctx context.Context,
+	req *connect.Request[likev1.CreateDislikeRequest],
+) (*connect.Response[likev1.CreateDislikeResponse], error) {
+	userId := strings.TrimSpace(req.Msg.UserId)
+	postId := strings.TrimSpace(req.Msg.PostId)
+
+	if userId == "" || postId == "" {
+		return nil, connect.NewError(
+			connect.CodeInvalidArgument,
+			errors.New("userId and postId are required"),
+		)
+	}
+
+	// Parse UUIDs
+	uid, err := uuid.Parse(userId)
+	if err != nil {
+		return nil, connect.NewError(
+			connect.CodeInvalidArgument,
+			fmt.Errorf("invalid userId: %w", err),
+		)
+	}
+	pid, err := uuid.Parse(postId)
+	if err != nil {
+		return nil, connect.NewError(
+			connect.CodeInvalidArgument,
+			fmt.Errorf("invalid postId: %w", err),
+		)
+	}
+
+	// Start transaction
+	tx, err := h.Db.Begin(ctx)
+	if err != nil {
+		return nil, connect.NewError(
+			connect.CodeInternal,
+			fmt.Errorf("failed to start transaction: %w", err),
+		)
+	}
+	defer tx.Rollback(ctx)
+
+	// Wrap sqlc with transaction
+	qtx := h.Queries.WithTx(tx)
+
+	// Build DislikeEvent proto
+	dislikeEvent := &likev1.DisLike{
+		PostId:    postId,
+		UserId:    userId,
+		CreatedAt: timestamppb.Now(),
+	}
+
+	// Marshal event payload
+	payload, err := protojson.Marshal(dislikeEvent)
+	if err != nil {
+		return nil, connect.NewError(
+			connect.CodeInternal,
+			fmt.Errorf("failed to marshal payload: %w", err),
+		)
+	}
+
+	// Insert event into outbox
+	if _, err := qtx.InsertPayloadEvent(ctx, repository.InsertPayloadEventParams{
+		EventType: USER_DISLIKE_EVENT_TYPE,
+		Payload:   payload,
+	}); err != nil {
+		return nil, connect.NewError(
+			connect.CodeInternal,
+			fmt.Errorf("failed to insert event into outbox: %w", err),
+		)
+	}
+
+	// Delete like (dislike = remove like)
+	deletedLike, err := qtx.DeleteLike(ctx, repository.DeleteLikeParams{
+		UserID: uid,
+		PostID: pid,
+	})
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			switch pgErr.Code {
+			case "23505": // unique violation
+				return nil, connect.NewError(connect.CodeAlreadyExists,
+					errors.New("like already removed"))
+			case "23503": // foreign key violation
+				return nil, connect.NewError(connect.CodeNotFound,
+					errors.New("user or post not found"))
+			}
+		}
+		return nil, connect.NewError(
+			connect.CodeInternal,
+			fmt.Errorf("failed to delete like: %w", err),
+		)
+	}
+
+	// Commit transaction only if both operations succeeded
+	if err := tx.Commit(ctx); err != nil {
+		return nil, connect.NewError(
+			connect.CodeInternal,
+			fmt.Errorf("failed to commit transaction: %w", err),
+		)
+	}
+
+	// Build response
+	res := &likev1.CreateDislikeResponse{
+		Dislike: &likev1.DisLike{
+			PostId:    deletedLike.PostID.String(),
+			UserId:    deletedLike.UserID.String(),
+			CreatedAt: dislikeEvent.CreatedAt,
+		},
+	}
+
+	return connect.NewResponse(res), nil
+}
+
 func (h *LikeStoreServiceHandler) StreamLikes(
 	ctx context.Context,
 	req *connect.Request[likev1.StreamLikesRequest],
 	stream *connect.ServerStream[likev1.LikeUpdate],
 ) error {
-	postIdStr := req.Msg.PostId
-	if postIdStr == "" {
+	postIDStr := req.Msg.PostId
+	if postIDStr == "" {
 		return connect.NewError(connect.CodeInvalidArgument, errors.New("post id is required"))
 	}
 
-	postID, err := uuid.Parse(postIdStr)
+	postID, err := uuid.Parse(postIDStr)
 	if err != nil {
 		return connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("invalid post id: %w", err))
 	}
@@ -177,7 +291,7 @@ func (h *LikeStoreServiceHandler) StreamLikes(
 	for {
 		msg, err := h.Consumer.Receive(ctx)
 		if err != nil {
-			// Exit gracefully if the client disconnected
+			// Exit gracefully on client cancellation or deadline exceeded
 			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 				return nil
 			}
@@ -189,39 +303,45 @@ func (h *LikeStoreServiceHandler) StreamLikes(
 		var like likev1.Like
 		if err := protojson.Unmarshal(msg.Payload(), &like); err != nil {
 			slog.Error("failed to unmarshal like event", "err", err)
-			// ack anyway to avoid poison-message loop
+			// Ack anyway to avoid poison-message loop
 			_ = h.Consumer.Ack(msg)
 			continue
 		}
 
-		if like.GetPostId() == postIdStr {
-			switch eventType {
-			case USER_LIKE_EVENT_TYPE:
-				totalLikes++
-			// case USER_UNLIKE_EVENT_TYPE:
-			// 	if totalLikes > 0 {
-			// 		totalLikes--
-			// 	}
-			default:
-				_ = h.Consumer.Ack(msg)
-				continue
-			}
-
-			update := &likev1.LikeUpdate{
-				PostId:     like.GetPostId(),
-				TotalLikes: totalLikes,
-				LikedAt:    like.CreatedAt,
-			}
-
-			if err := stream.Send(update); err != nil {
-				if errors.Is(err, context.Canceled) {
-					return nil
-				}
-				return connect.NewError(connect.CodeInternal, fmt.Errorf("failed to send stream: %w", err))
-			}
+		// Only process events for this post
+		if like.GetPostId() != postIDStr {
+			_ = h.Consumer.Ack(msg)
+			continue
 		}
 
-		// Ack message after processing
+		// Update counter
+		switch eventType {
+		case USER_LIKE_EVENT_TYPE:
+			totalLikes++
+		case USER_DISLIKE_EVENT_TYPE:
+			if totalLikes > 0 {
+				totalLikes--
+			}
+		default:
+			_ = h.Consumer.Ack(msg)
+			continue
+		}
+
+		// Send update
+		update := &likev1.LikeUpdate{
+			PostId:     like.GetPostId(),
+			TotalLikes: totalLikes,
+			LikedAt:    like.CreatedAt,
+		}
+
+		if err := stream.Send(update); err != nil {
+			if errors.Is(err, context.Canceled) {
+				return nil // client disconnected cleanly
+			}
+			return connect.NewError(connect.CodeInternal, fmt.Errorf("failed to send stream: %w", err))
+		}
+
+		// Ack message after successful processing
 		if ackErr := h.Consumer.Ack(msg); ackErr != nil {
 			slog.Warn("failed to ack message", "err", ackErr)
 		}

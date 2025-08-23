@@ -26,9 +26,10 @@ func (q *Queries) CountLikesByPost(ctx context.Context, postID uuid.UUID) (int64
 	return count, err
 }
 
-const deleteLike = `-- name: DeleteLike :exec
+const deleteLike = `-- name: DeleteLike :one
 DELETE FROM likes
 WHERE user_id = $1 AND post_id = $2
+RETURNING user_id, post_id, created_at
 `
 
 type DeleteLikeParams struct {
@@ -36,9 +37,11 @@ type DeleteLikeParams struct {
 	PostID uuid.UUID `json:"post_id"`
 }
 
-func (q *Queries) DeleteLike(ctx context.Context, arg DeleteLikeParams) error {
-	_, err := q.db.Exec(ctx, deleteLike, arg.UserID, arg.PostID)
-	return err
+func (q *Queries) DeleteLike(ctx context.Context, arg DeleteLikeParams) (Like, error) {
+	row := q.db.QueryRow(ctx, deleteLike, arg.UserID, arg.PostID)
+	var i Like
+	err := row.Scan(&i.UserID, &i.PostID, &i.CreatedAt)
+	return i, err
 }
 
 const findAllLikes = `-- name: FindAllLikes :many

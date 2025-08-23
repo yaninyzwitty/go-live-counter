@@ -35,6 +35,9 @@ const (
 const (
 	// LikeServiceCreateLikeProcedure is the fully-qualified name of the LikeService's CreateLike RPC.
 	LikeServiceCreateLikeProcedure = "/like.v1.LikeService/CreateLike"
+	// LikeServiceCreateDislikeProcedure is the fully-qualified name of the LikeService's CreateDislike
+	// RPC.
+	LikeServiceCreateDislikeProcedure = "/like.v1.LikeService/CreateDislike"
 	// LikeServiceStreamLikesProcedure is the fully-qualified name of the LikeService's StreamLikes RPC.
 	LikeServiceStreamLikesProcedure = "/like.v1.LikeService/StreamLikes"
 )
@@ -42,6 +45,7 @@ const (
 // LikeServiceClient is a client for the like.v1.LikeService service.
 type LikeServiceClient interface {
 	CreateLike(context.Context, *connect.Request[v1.CreateLikeRequest]) (*connect.Response[v1.CreateLikeResponse], error)
+	CreateDislike(context.Context, *connect.Request[v1.CreateDislikeRequest]) (*connect.Response[v1.CreateDislikeResponse], error)
 	StreamLikes(context.Context, *connect.Request[v1.StreamLikesRequest]) (*connect.ServerStreamForClient[v1.LikeUpdate], error)
 }
 
@@ -62,6 +66,12 @@ func NewLikeServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(likeServiceMethods.ByName("CreateLike")),
 			connect.WithClientOptions(opts...),
 		),
+		createDislike: connect.NewClient[v1.CreateDislikeRequest, v1.CreateDislikeResponse](
+			httpClient,
+			baseURL+LikeServiceCreateDislikeProcedure,
+			connect.WithSchema(likeServiceMethods.ByName("CreateDislike")),
+			connect.WithClientOptions(opts...),
+		),
 		streamLikes: connect.NewClient[v1.StreamLikesRequest, v1.LikeUpdate](
 			httpClient,
 			baseURL+LikeServiceStreamLikesProcedure,
@@ -73,13 +83,19 @@ func NewLikeServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 
 // likeServiceClient implements LikeServiceClient.
 type likeServiceClient struct {
-	createLike  *connect.Client[v1.CreateLikeRequest, v1.CreateLikeResponse]
-	streamLikes *connect.Client[v1.StreamLikesRequest, v1.LikeUpdate]
+	createLike    *connect.Client[v1.CreateLikeRequest, v1.CreateLikeResponse]
+	createDislike *connect.Client[v1.CreateDislikeRequest, v1.CreateDislikeResponse]
+	streamLikes   *connect.Client[v1.StreamLikesRequest, v1.LikeUpdate]
 }
 
 // CreateLike calls like.v1.LikeService.CreateLike.
 func (c *likeServiceClient) CreateLike(ctx context.Context, req *connect.Request[v1.CreateLikeRequest]) (*connect.Response[v1.CreateLikeResponse], error) {
 	return c.createLike.CallUnary(ctx, req)
+}
+
+// CreateDislike calls like.v1.LikeService.CreateDislike.
+func (c *likeServiceClient) CreateDislike(ctx context.Context, req *connect.Request[v1.CreateDislikeRequest]) (*connect.Response[v1.CreateDislikeResponse], error) {
+	return c.createDislike.CallUnary(ctx, req)
 }
 
 // StreamLikes calls like.v1.LikeService.StreamLikes.
@@ -90,6 +106,7 @@ func (c *likeServiceClient) StreamLikes(ctx context.Context, req *connect.Reques
 // LikeServiceHandler is an implementation of the like.v1.LikeService service.
 type LikeServiceHandler interface {
 	CreateLike(context.Context, *connect.Request[v1.CreateLikeRequest]) (*connect.Response[v1.CreateLikeResponse], error)
+	CreateDislike(context.Context, *connect.Request[v1.CreateDislikeRequest]) (*connect.Response[v1.CreateDislikeResponse], error)
 	StreamLikes(context.Context, *connect.Request[v1.StreamLikesRequest], *connect.ServerStream[v1.LikeUpdate]) error
 }
 
@@ -106,6 +123,12 @@ func NewLikeServiceHandler(svc LikeServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(likeServiceMethods.ByName("CreateLike")),
 		connect.WithHandlerOptions(opts...),
 	)
+	likeServiceCreateDislikeHandler := connect.NewUnaryHandler(
+		LikeServiceCreateDislikeProcedure,
+		svc.CreateDislike,
+		connect.WithSchema(likeServiceMethods.ByName("CreateDislike")),
+		connect.WithHandlerOptions(opts...),
+	)
 	likeServiceStreamLikesHandler := connect.NewServerStreamHandler(
 		LikeServiceStreamLikesProcedure,
 		svc.StreamLikes,
@@ -116,6 +139,8 @@ func NewLikeServiceHandler(svc LikeServiceHandler, opts ...connect.HandlerOption
 		switch r.URL.Path {
 		case LikeServiceCreateLikeProcedure:
 			likeServiceCreateLikeHandler.ServeHTTP(w, r)
+		case LikeServiceCreateDislikeProcedure:
+			likeServiceCreateDislikeHandler.ServeHTTP(w, r)
 		case LikeServiceStreamLikesProcedure:
 			likeServiceStreamLikesHandler.ServeHTTP(w, r)
 		default:
@@ -129,6 +154,10 @@ type UnimplementedLikeServiceHandler struct{}
 
 func (UnimplementedLikeServiceHandler) CreateLike(context.Context, *connect.Request[v1.CreateLikeRequest]) (*connect.Response[v1.CreateLikeResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("like.v1.LikeService.CreateLike is not implemented"))
+}
+
+func (UnimplementedLikeServiceHandler) CreateDislike(context.Context, *connect.Request[v1.CreateDislikeRequest]) (*connect.Response[v1.CreateDislikeResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("like.v1.LikeService.CreateDislike is not implemented"))
 }
 
 func (UnimplementedLikeServiceHandler) StreamLikes(context.Context, *connect.Request[v1.StreamLikesRequest], *connect.ServerStream[v1.LikeUpdate]) error {

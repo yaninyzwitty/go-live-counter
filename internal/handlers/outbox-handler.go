@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/apache/pulsar-client-go/pulsar"
@@ -32,28 +33,54 @@ func NewOutbox(queries *repository.Queries, producer pulsar.Producer) *OutboxSto
 	}
 }
 
-func (h *OutboxStoreServiceHandler) ProcessOutboxMessage(ctx context.Context, req *connect.Request[outboxv1.ProcessOutboxMessageRequest]) (*connect.Response[outboxv1.ProcessOutboxMessageResponse], error) {
+// eventUnmarshalers maps event types to payload unmarshaling logic.
+var eventUnmarshalers = map[string]func([]byte) error{
+	"USER_LIKE_EVENT_TYPE": func(payload []byte) error {
+		var like likev1.Like
+		return protojson.Unmarshal(payload, &like)
+	},
+	"USER_DISLIKE_EVENT_TYPE": func(payload []byte) error {
+		var dislike likev1.DisLike
+		return protojson.Unmarshal(payload, &dislike)
+	},
+}
+
+func (h *OutboxStoreServiceHandler) ProcessOutboxMessage(
+	ctx context.Context,
+	req *connect.Request[outboxv1.ProcessOutboxMessageRequest],
+) (*connect.Response[outboxv1.ProcessOutboxMessageResponse], error) {
+
 	// allow only unprocessed messages
 	if req.Msg.Published {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("published messages cannot be processed again"))
+		return nil, connect.NewError(connect.CodeInvalidArgument,
+			errors.New("published messages cannot be processed again"))
 	}
 
 	events, err := h.GetOutboxMessages(ctx)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to fetch outbox messages: %w", err))
+		return nil, connect.NewError(connect.CodeInternal,
+			fmt.Errorf("failed to fetch outbox messages: %w", err))
 	}
 
 	var processedCount int32
 	for _, event := range events {
 		slog.Info("sending event", "id", event.ID)
 
-		// Determine routing key: prefer post ID from payload so consumers can filter by post.
+		// routing key: fallback to event ID
 		routingKey := event.ID.String()
-		var like likev1.Like
-		if err := protojson.Unmarshal(event.Payload, &like); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, fmt.Errorf("failed to unmarshal payload %w", err))
+
+		// Lookup handler for event type
+		if unmarshalFn, ok := eventUnmarshalers[event.EventType]; ok {
+			if err := unmarshalFn(event.Payload); err != nil {
+				return nil, connect.NewError(connect.CodeInternal,
+					fmt.Errorf("failed to unmarshal payload for %s: %w", event.EventType, err))
+			}
+		} else {
+			slog.Warn("unknown event type, skipping", "eventType", event.EventType)
+			continue
 		}
 
+		// Build message
 		msg := &pulsar.ProducerMessage{
 			Key:     routingKey,
 			Payload: event.Payload,
@@ -62,7 +89,7 @@ func (h *OutboxStoreServiceHandler) ProcessOutboxMessage(ctx context.Context, re
 			},
 		}
 
-		// async send to Pulsar
+		// Async publish to Pulsar
 		h.Producer.SendAsync(ctx, msg, func(mi pulsar.MessageID, pm *pulsar.ProducerMessage, err error) {
 			if err != nil {
 				slog.Error("failed to publish event", "id", event.ID, "error", err)
@@ -73,13 +100,17 @@ func (h *OutboxStoreServiceHandler) ProcessOutboxMessage(ctx context.Context, re
 				"id", event.ID,
 				"messageID", mi)
 
-			// mark as published only on success
-			if err := h.Queries.PublishProcessedEvents(context.Background(), []uuid.UUID{event.ID}); err != nil {
-				slog.Error("failed to mark event as published", "id", event.ID, "error", err)
-				return
-			}
+			// mark as published in a safe goroutine
+			go func(eventID uuid.UUID) {
+				cctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
 
-			slog.Info("event marked as published", "id", event.ID)
+				if err := h.Queries.PublishProcessedEvents(cctx, []uuid.UUID{eventID}); err != nil {
+					slog.Error("failed to mark event as published", "id", eventID, "error", err)
+					return
+				}
+				slog.Info("event marked as published", "id", eventID)
+			}(event.ID)
 		})
 
 		processedCount++
@@ -89,7 +120,6 @@ func (h *OutboxStoreServiceHandler) ProcessOutboxMessage(ctx context.Context, re
 		ProcessedCount: processedCount,
 	})
 	return resp, nil
-
 }
 
 func (h *OutboxStoreServiceHandler) GetOutboxMessages(ctx context.Context) ([]repository.Outbox, error) {
